@@ -11,10 +11,10 @@ func TestFetchEmbed(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
 		resp, err := fetchEmbed(
 			"https://www.youtube.com/watch?v=8jPQjjsBbIc",
-			makeCandidate(Provider{
+			&Provider{
 				Name: "YouTube",
 				URL:  "https://www.youtube.com/",
-				Endpoints: []Endpoint{Endpoint{
+				Endpoints: []Endpoint{{
 					Schemes: []string{
 						"https://*.youtube.com/watch*",
 						"https://*.youtube.com/v/*\"",
@@ -23,7 +23,7 @@ func TestFetchEmbed(t *testing.T) {
 					URL:       "https://www.youtube.com/oembed",
 					Discovery: true,
 				}},
-			}),
+			},
 			&Params{
 				MaxWidth:  250,
 				MaxHeight: 250,
@@ -34,7 +34,6 @@ func TestFetchEmbed(t *testing.T) {
 	})
 	t.Run("invalid", func(t *testing.T) {
 		for _, url := range []string{
-			"",
 			"htt:/abc.com/failed-none-sense",
 			"https://abc.com/failed-none-sense",
 			"http://badcom/146753785",
@@ -45,12 +44,12 @@ func TestFetchEmbed(t *testing.T) {
 		} {
 			url := url
 			t.Run(url, func(t *testing.T) {
-				c := findProvider(url)
-				if c == nil {
-					c = new(providerCandidate)
+				provider := findProvider(url)
+				if provider == nil {
+					provider = &Provider{Endpoints: []Endpoint{Endpoint{}}}
 				}
 
-				_, err := fetchEmbed(url, *c, nil)
+				_, err := fetchEmbed(url, provider, nil)
 				assert.Error(err)
 			})
 		}

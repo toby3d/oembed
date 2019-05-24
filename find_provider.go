@@ -44,26 +44,34 @@ func makeCandidate(p Provider) providerCandidate {
 
 }
 
-func findProvider(url string) *providerCandidate {
-	var candidates []providerCandidate
-	for _, provider := range providersList {
+func findProvider(url string) *Provider {
+	var candidates []Provider
+	for _, provider := range Providers {
 		provider := provider
-		candidate := makeCandidate(provider)
-		if len(candidate.Schemes) == 0 {
-			if !strings.Contains(url, candidate.Domain) {
+
+		endpoint := provider.Endpoints[0]
+		domain := getHostname(endpoint.URL)
+		if domain != "" {
+			domain = strings.TrimPrefix(domain, "www.")
+		} else {
+			domain = ""
+		}
+
+		if len(endpoint.Schemes) == 0 {
+			if !strings.Contains(url, domain) {
 				continue
 			}
-			candidates = append(candidates, candidate)
+			candidates = append(candidates, provider)
 			continue
 		}
-		for _, scheme := range candidate.Schemes {
+		for _, scheme := range endpoint.Schemes {
 			scheme := scheme
 			reg := regexp.MustCompile(strings.Replace(scheme, "*", "(.*)", -1))
 			if !reg.MatchString(url) {
 				continue
 			}
 
-			candidates = append(candidates, candidate)
+			candidates = append(candidates, provider)
 			break
 		}
 	}

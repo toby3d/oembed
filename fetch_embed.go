@@ -8,18 +8,19 @@ import (
 	template "github.com/valyala/fasttemplate"
 )
 
+// Params represent a optional parameters for Extract method.
 type Params struct {
 	MaxWidth  int
 	MaxHeight int
 }
 
-func fetchEmbed(url string, provider providerCandidate, params *Params) (*Response, error) {
-	resourceUrl := provider.URL
-	resourceUrl = template.ExecuteString(resourceUrl, "{", "}", map[string]interface{}{"format": "json"})
+func fetchEmbed(url string, provider *Provider, params *Params) (*OEmbed, error) {
+	resourceURL := provider.Endpoints[0].URL
+	resourceURL = template.ExecuteString(resourceURL, "{", "}", map[string]interface{}{"format": "json"})
 
 	link := http.AcquireURI()
 	defer http.ReleaseURI(link)
-	link.Update(resourceUrl)
+	link.Update(resourceURL)
 	qa := link.QueryArgs()
 	qa.Add("format", "json")
 	qa.Add("url", url)
@@ -40,14 +41,20 @@ func fetchEmbed(url string, provider providerCandidate, params *Params) (*Respon
 	defer http.ReleaseResponse(resp)
 
 	if err := http.Do(req, resp); err != nil {
-		return nil, err
+		return nil, Error{
+			Message: err.Error(),
+			URL:     url,
+		}
 	}
 
-	var response Response
-	if err := json.Unmarshal(resp.Body(), &response); err != nil {
-		return nil, err
+	var oEmbed OEmbed
+	if err := json.UnmarshalFast(resp.Body(), &oEmbed); err != nil {
+		return nil, Error{
+			Message: err.Error(),
+			URL:     url,
+		}
 	}
-	response.ProviderName = provider.ProviderName
-	response.ProviderURL = provider.ProviderURL
-	return &response, nil
+	oEmbed.ProviderName = provider.Name
+	oEmbed.ProviderURL = provider.URL
+	return &oEmbed, nil
 }

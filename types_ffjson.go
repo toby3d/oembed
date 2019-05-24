@@ -494,6 +494,765 @@ done:
 }
 
 // MarshalJSON marshal bytes to json - template
+func (j *OEmbed) MarshalJSON() ([]byte, error) {
+	var buf fflib.Buffer
+	if j == nil {
+		buf.WriteString("null")
+		return buf.Bytes(), nil
+	}
+	err := j.MarshalJSONBuf(&buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// MarshalJSONBuf marshal buff to json - template
+func (j *OEmbed) MarshalJSONBuf(buf fflib.EncodingBuffer) error {
+	if j == nil {
+		buf.WriteString("null")
+		return nil
+	}
+	var err error
+	var obj []byte
+	_ = obj
+	_ = err
+	buf.WriteString(`{ "type":`)
+	fflib.WriteJsonString(buf, string(j.Type))
+	buf.WriteString(`,"version":`)
+	fflib.WriteJsonString(buf, string(j.Version))
+	buf.WriteByte(',')
+	if len(j.Title) != 0 {
+		buf.WriteString(`"title":`)
+		fflib.WriteJsonString(buf, string(j.Title))
+		buf.WriteByte(',')
+	}
+	if len(j.AuthorName) != 0 {
+		buf.WriteString(`"author_name":`)
+		fflib.WriteJsonString(buf, string(j.AuthorName))
+		buf.WriteByte(',')
+	}
+	if len(j.AuthorURL) != 0 {
+		buf.WriteString(`"author_url":`)
+		fflib.WriteJsonString(buf, string(j.AuthorURL))
+		buf.WriteByte(',')
+	}
+	if len(j.ProviderName) != 0 {
+		buf.WriteString(`"provider_name":`)
+		fflib.WriteJsonString(buf, string(j.ProviderName))
+		buf.WriteByte(',')
+	}
+	if len(j.ProviderURL) != 0 {
+		buf.WriteString(`"provider_url":`)
+		fflib.WriteJsonString(buf, string(j.ProviderURL))
+		buf.WriteByte(',')
+	}
+	if j.CacheAge != 0 {
+		buf.WriteString(`"cache_age":`)
+		fflib.FormatBits2(buf, uint64(j.CacheAge), 10, j.CacheAge < 0)
+		buf.WriteByte(',')
+	}
+	if len(j.ThumbnailURL) != 0 {
+		buf.WriteString(`"thumbnail_url":`)
+		fflib.WriteJsonString(buf, string(j.ThumbnailURL))
+		buf.WriteByte(',')
+	}
+	if j.ThumbnailWidth != 0 {
+		buf.WriteString(`"thumbnail_width":`)
+		fflib.FormatBits2(buf, uint64(j.ThumbnailWidth), 10, j.ThumbnailWidth < 0)
+		buf.WriteByte(',')
+	}
+	if j.ThumbnailHeight != 0 {
+		buf.WriteString(`"thumbnail_height":`)
+		fflib.FormatBits2(buf, uint64(j.ThumbnailHeight), 10, j.ThumbnailHeight < 0)
+		buf.WriteByte(',')
+	}
+	if len(j.URL) != 0 {
+		buf.WriteString(`"url":`)
+		fflib.WriteJsonString(buf, string(j.URL))
+		buf.WriteByte(',')
+	}
+	buf.Rewind(1)
+	buf.WriteByte('}')
+	return nil
+}
+
+const (
+	ffjtOEmbedbase = iota
+	ffjtOEmbednosuchkey
+
+	ffjtOEmbedType
+
+	ffjtOEmbedVersion
+
+	ffjtOEmbedTitle
+
+	ffjtOEmbedAuthorName
+
+	ffjtOEmbedAuthorURL
+
+	ffjtOEmbedProviderName
+
+	ffjtOEmbedProviderURL
+
+	ffjtOEmbedCacheAge
+
+	ffjtOEmbedThumbnailURL
+
+	ffjtOEmbedThumbnailWidth
+
+	ffjtOEmbedThumbnailHeight
+
+	ffjtOEmbedURL
+)
+
+var ffjKeyOEmbedType = []byte("type")
+
+var ffjKeyOEmbedVersion = []byte("version")
+
+var ffjKeyOEmbedTitle = []byte("title")
+
+var ffjKeyOEmbedAuthorName = []byte("author_name")
+
+var ffjKeyOEmbedAuthorURL = []byte("author_url")
+
+var ffjKeyOEmbedProviderName = []byte("provider_name")
+
+var ffjKeyOEmbedProviderURL = []byte("provider_url")
+
+var ffjKeyOEmbedCacheAge = []byte("cache_age")
+
+var ffjKeyOEmbedThumbnailURL = []byte("thumbnail_url")
+
+var ffjKeyOEmbedThumbnailWidth = []byte("thumbnail_width")
+
+var ffjKeyOEmbedThumbnailHeight = []byte("thumbnail_height")
+
+var ffjKeyOEmbedURL = []byte("url")
+
+// UnmarshalJSON umarshall json - template of ffjson
+func (j *OEmbed) UnmarshalJSON(input []byte) error {
+	fs := fflib.NewFFLexer(input)
+	return j.UnmarshalJSONFFLexer(fs, fflib.FFParse_map_start)
+}
+
+// UnmarshalJSONFFLexer fast json unmarshall - template ffjson
+func (j *OEmbed) UnmarshalJSONFFLexer(fs *fflib.FFLexer, state fflib.FFParseState) error {
+	var err error
+	currentKey := ffjtOEmbedbase
+	_ = currentKey
+	tok := fflib.FFTok_init
+	wantedTok := fflib.FFTok_init
+
+mainparse:
+	for {
+		tok = fs.Scan()
+		//	println(fmt.Sprintf("debug: tok: %v  state: %v", tok, state))
+		if tok == fflib.FFTok_error {
+			goto tokerror
+		}
+
+		switch state {
+
+		case fflib.FFParse_map_start:
+			if tok != fflib.FFTok_left_bracket {
+				wantedTok = fflib.FFTok_left_bracket
+				goto wrongtokenerror
+			}
+			state = fflib.FFParse_want_key
+			continue
+
+		case fflib.FFParse_after_value:
+			if tok == fflib.FFTok_comma {
+				state = fflib.FFParse_want_key
+			} else if tok == fflib.FFTok_right_bracket {
+				goto done
+			} else {
+				wantedTok = fflib.FFTok_comma
+				goto wrongtokenerror
+			}
+
+		case fflib.FFParse_want_key:
+			// json {} ended. goto exit. woo.
+			if tok == fflib.FFTok_right_bracket {
+				goto done
+			}
+			if tok != fflib.FFTok_string {
+				wantedTok = fflib.FFTok_string
+				goto wrongtokenerror
+			}
+
+			kn := fs.Output.Bytes()
+			if len(kn) <= 0 {
+				// "" case. hrm.
+				currentKey = ffjtOEmbednosuchkey
+				state = fflib.FFParse_want_colon
+				goto mainparse
+			} else {
+				switch kn[0] {
+
+				case 'a':
+
+					if bytes.Equal(ffjKeyOEmbedAuthorName, kn) {
+						currentKey = ffjtOEmbedAuthorName
+						state = fflib.FFParse_want_colon
+						goto mainparse
+
+					} else if bytes.Equal(ffjKeyOEmbedAuthorURL, kn) {
+						currentKey = ffjtOEmbedAuthorURL
+						state = fflib.FFParse_want_colon
+						goto mainparse
+					}
+
+				case 'c':
+
+					if bytes.Equal(ffjKeyOEmbedCacheAge, kn) {
+						currentKey = ffjtOEmbedCacheAge
+						state = fflib.FFParse_want_colon
+						goto mainparse
+					}
+
+				case 'p':
+
+					if bytes.Equal(ffjKeyOEmbedProviderName, kn) {
+						currentKey = ffjtOEmbedProviderName
+						state = fflib.FFParse_want_colon
+						goto mainparse
+
+					} else if bytes.Equal(ffjKeyOEmbedProviderURL, kn) {
+						currentKey = ffjtOEmbedProviderURL
+						state = fflib.FFParse_want_colon
+						goto mainparse
+					}
+
+				case 't':
+
+					if bytes.Equal(ffjKeyOEmbedType, kn) {
+						currentKey = ffjtOEmbedType
+						state = fflib.FFParse_want_colon
+						goto mainparse
+
+					} else if bytes.Equal(ffjKeyOEmbedTitle, kn) {
+						currentKey = ffjtOEmbedTitle
+						state = fflib.FFParse_want_colon
+						goto mainparse
+
+					} else if bytes.Equal(ffjKeyOEmbedThumbnailURL, kn) {
+						currentKey = ffjtOEmbedThumbnailURL
+						state = fflib.FFParse_want_colon
+						goto mainparse
+
+					} else if bytes.Equal(ffjKeyOEmbedThumbnailWidth, kn) {
+						currentKey = ffjtOEmbedThumbnailWidth
+						state = fflib.FFParse_want_colon
+						goto mainparse
+
+					} else if bytes.Equal(ffjKeyOEmbedThumbnailHeight, kn) {
+						currentKey = ffjtOEmbedThumbnailHeight
+						state = fflib.FFParse_want_colon
+						goto mainparse
+					}
+
+				case 'u':
+
+					if bytes.Equal(ffjKeyOEmbedURL, kn) {
+						currentKey = ffjtOEmbedURL
+						state = fflib.FFParse_want_colon
+						goto mainparse
+					}
+
+				case 'v':
+
+					if bytes.Equal(ffjKeyOEmbedVersion, kn) {
+						currentKey = ffjtOEmbedVersion
+						state = fflib.FFParse_want_colon
+						goto mainparse
+					}
+
+				}
+
+				if fflib.SimpleLetterEqualFold(ffjKeyOEmbedURL, kn) {
+					currentKey = ffjtOEmbedURL
+					state = fflib.FFParse_want_colon
+					goto mainparse
+				}
+
+				if fflib.AsciiEqualFold(ffjKeyOEmbedThumbnailHeight, kn) {
+					currentKey = ffjtOEmbedThumbnailHeight
+					state = fflib.FFParse_want_colon
+					goto mainparse
+				}
+
+				if fflib.AsciiEqualFold(ffjKeyOEmbedThumbnailWidth, kn) {
+					currentKey = ffjtOEmbedThumbnailWidth
+					state = fflib.FFParse_want_colon
+					goto mainparse
+				}
+
+				if fflib.AsciiEqualFold(ffjKeyOEmbedThumbnailURL, kn) {
+					currentKey = ffjtOEmbedThumbnailURL
+					state = fflib.FFParse_want_colon
+					goto mainparse
+				}
+
+				if fflib.AsciiEqualFold(ffjKeyOEmbedCacheAge, kn) {
+					currentKey = ffjtOEmbedCacheAge
+					state = fflib.FFParse_want_colon
+					goto mainparse
+				}
+
+				if fflib.AsciiEqualFold(ffjKeyOEmbedProviderURL, kn) {
+					currentKey = ffjtOEmbedProviderURL
+					state = fflib.FFParse_want_colon
+					goto mainparse
+				}
+
+				if fflib.AsciiEqualFold(ffjKeyOEmbedProviderName, kn) {
+					currentKey = ffjtOEmbedProviderName
+					state = fflib.FFParse_want_colon
+					goto mainparse
+				}
+
+				if fflib.AsciiEqualFold(ffjKeyOEmbedAuthorURL, kn) {
+					currentKey = ffjtOEmbedAuthorURL
+					state = fflib.FFParse_want_colon
+					goto mainparse
+				}
+
+				if fflib.AsciiEqualFold(ffjKeyOEmbedAuthorName, kn) {
+					currentKey = ffjtOEmbedAuthorName
+					state = fflib.FFParse_want_colon
+					goto mainparse
+				}
+
+				if fflib.SimpleLetterEqualFold(ffjKeyOEmbedTitle, kn) {
+					currentKey = ffjtOEmbedTitle
+					state = fflib.FFParse_want_colon
+					goto mainparse
+				}
+
+				if fflib.EqualFoldRight(ffjKeyOEmbedVersion, kn) {
+					currentKey = ffjtOEmbedVersion
+					state = fflib.FFParse_want_colon
+					goto mainparse
+				}
+
+				if fflib.SimpleLetterEqualFold(ffjKeyOEmbedType, kn) {
+					currentKey = ffjtOEmbedType
+					state = fflib.FFParse_want_colon
+					goto mainparse
+				}
+
+				currentKey = ffjtOEmbednosuchkey
+				state = fflib.FFParse_want_colon
+				goto mainparse
+			}
+
+		case fflib.FFParse_want_colon:
+			if tok != fflib.FFTok_colon {
+				wantedTok = fflib.FFTok_colon
+				goto wrongtokenerror
+			}
+			state = fflib.FFParse_want_value
+			continue
+		case fflib.FFParse_want_value:
+
+			if tok == fflib.FFTok_left_brace || tok == fflib.FFTok_left_bracket || tok == fflib.FFTok_integer || tok == fflib.FFTok_double || tok == fflib.FFTok_string || tok == fflib.FFTok_bool || tok == fflib.FFTok_null {
+				switch currentKey {
+
+				case ffjtOEmbedType:
+					goto handle_Type
+
+				case ffjtOEmbedVersion:
+					goto handle_Version
+
+				case ffjtOEmbedTitle:
+					goto handle_Title
+
+				case ffjtOEmbedAuthorName:
+					goto handle_AuthorName
+
+				case ffjtOEmbedAuthorURL:
+					goto handle_AuthorURL
+
+				case ffjtOEmbedProviderName:
+					goto handle_ProviderName
+
+				case ffjtOEmbedProviderURL:
+					goto handle_ProviderURL
+
+				case ffjtOEmbedCacheAge:
+					goto handle_CacheAge
+
+				case ffjtOEmbedThumbnailURL:
+					goto handle_ThumbnailURL
+
+				case ffjtOEmbedThumbnailWidth:
+					goto handle_ThumbnailWidth
+
+				case ffjtOEmbedThumbnailHeight:
+					goto handle_ThumbnailHeight
+
+				case ffjtOEmbedURL:
+					goto handle_URL
+
+				case ffjtOEmbednosuchkey:
+					err = fs.SkipField(tok)
+					if err != nil {
+						return fs.WrapErr(err)
+					}
+					state = fflib.FFParse_after_value
+					goto mainparse
+				}
+			} else {
+				goto wantedvalue
+			}
+		}
+	}
+
+handle_Type:
+
+	/* handler: j.Type type=string kind=string quoted=false*/
+
+	{
+
+		{
+			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
+				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
+			}
+		}
+
+		if tok == fflib.FFTok_null {
+
+		} else {
+
+			outBuf := fs.Output.Bytes()
+
+			j.Type = string(string(outBuf))
+
+		}
+	}
+
+	state = fflib.FFParse_after_value
+	goto mainparse
+
+handle_Version:
+
+	/* handler: j.Version type=string kind=string quoted=false*/
+
+	{
+
+		{
+			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
+				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
+			}
+		}
+
+		if tok == fflib.FFTok_null {
+
+		} else {
+
+			outBuf := fs.Output.Bytes()
+
+			j.Version = string(string(outBuf))
+
+		}
+	}
+
+	state = fflib.FFParse_after_value
+	goto mainparse
+
+handle_Title:
+
+	/* handler: j.Title type=string kind=string quoted=false*/
+
+	{
+
+		{
+			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
+				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
+			}
+		}
+
+		if tok == fflib.FFTok_null {
+
+		} else {
+
+			outBuf := fs.Output.Bytes()
+
+			j.Title = string(string(outBuf))
+
+		}
+	}
+
+	state = fflib.FFParse_after_value
+	goto mainparse
+
+handle_AuthorName:
+
+	/* handler: j.AuthorName type=string kind=string quoted=false*/
+
+	{
+
+		{
+			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
+				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
+			}
+		}
+
+		if tok == fflib.FFTok_null {
+
+		} else {
+
+			outBuf := fs.Output.Bytes()
+
+			j.AuthorName = string(string(outBuf))
+
+		}
+	}
+
+	state = fflib.FFParse_after_value
+	goto mainparse
+
+handle_AuthorURL:
+
+	/* handler: j.AuthorURL type=string kind=string quoted=false*/
+
+	{
+
+		{
+			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
+				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
+			}
+		}
+
+		if tok == fflib.FFTok_null {
+
+		} else {
+
+			outBuf := fs.Output.Bytes()
+
+			j.AuthorURL = string(string(outBuf))
+
+		}
+	}
+
+	state = fflib.FFParse_after_value
+	goto mainparse
+
+handle_ProviderName:
+
+	/* handler: j.ProviderName type=string kind=string quoted=false*/
+
+	{
+
+		{
+			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
+				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
+			}
+		}
+
+		if tok == fflib.FFTok_null {
+
+		} else {
+
+			outBuf := fs.Output.Bytes()
+
+			j.ProviderName = string(string(outBuf))
+
+		}
+	}
+
+	state = fflib.FFParse_after_value
+	goto mainparse
+
+handle_ProviderURL:
+
+	/* handler: j.ProviderURL type=string kind=string quoted=false*/
+
+	{
+
+		{
+			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
+				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
+			}
+		}
+
+		if tok == fflib.FFTok_null {
+
+		} else {
+
+			outBuf := fs.Output.Bytes()
+
+			j.ProviderURL = string(string(outBuf))
+
+		}
+	}
+
+	state = fflib.FFParse_after_value
+	goto mainparse
+
+handle_CacheAge:
+
+	/* handler: j.CacheAge type=int kind=int quoted=false*/
+
+	{
+		if tok != fflib.FFTok_integer && tok != fflib.FFTok_null {
+			return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for int", tok))
+		}
+	}
+
+	{
+
+		if tok == fflib.FFTok_null {
+
+		} else {
+
+			tval, err := fflib.ParseInt(fs.Output.Bytes(), 10, 64)
+
+			if err != nil {
+				return fs.WrapErr(err)
+			}
+
+			j.CacheAge = int(tval)
+
+		}
+	}
+
+	state = fflib.FFParse_after_value
+	goto mainparse
+
+handle_ThumbnailURL:
+
+	/* handler: j.ThumbnailURL type=string kind=string quoted=false*/
+
+	{
+
+		{
+			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
+				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
+			}
+		}
+
+		if tok == fflib.FFTok_null {
+
+		} else {
+
+			outBuf := fs.Output.Bytes()
+
+			j.ThumbnailURL = string(string(outBuf))
+
+		}
+	}
+
+	state = fflib.FFParse_after_value
+	goto mainparse
+
+handle_ThumbnailWidth:
+
+	/* handler: j.ThumbnailWidth type=int kind=int quoted=false*/
+
+	{
+		if tok != fflib.FFTok_integer && tok != fflib.FFTok_null {
+			return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for int", tok))
+		}
+	}
+
+	{
+
+		if tok == fflib.FFTok_null {
+
+		} else {
+
+			tval, err := fflib.ParseInt(fs.Output.Bytes(), 10, 64)
+
+			if err != nil {
+				return fs.WrapErr(err)
+			}
+
+			j.ThumbnailWidth = int(tval)
+
+		}
+	}
+
+	state = fflib.FFParse_after_value
+	goto mainparse
+
+handle_ThumbnailHeight:
+
+	/* handler: j.ThumbnailHeight type=int kind=int quoted=false*/
+
+	{
+		if tok != fflib.FFTok_integer && tok != fflib.FFTok_null {
+			return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for int", tok))
+		}
+	}
+
+	{
+
+		if tok == fflib.FFTok_null {
+
+		} else {
+
+			tval, err := fflib.ParseInt(fs.Output.Bytes(), 10, 64)
+
+			if err != nil {
+				return fs.WrapErr(err)
+			}
+
+			j.ThumbnailHeight = int(tval)
+
+		}
+	}
+
+	state = fflib.FFParse_after_value
+	goto mainparse
+
+handle_URL:
+
+	/* handler: j.URL type=string kind=string quoted=false*/
+
+	{
+
+		{
+			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
+				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
+			}
+		}
+
+		if tok == fflib.FFTok_null {
+
+		} else {
+
+			outBuf := fs.Output.Bytes()
+
+			j.URL = string(string(outBuf))
+
+		}
+	}
+
+	state = fflib.FFParse_after_value
+	goto mainparse
+
+wantedvalue:
+	return fs.WrapErr(fmt.Errorf("wanted value token, but got token: %v", tok))
+wrongtokenerror:
+	return fs.WrapErr(fmt.Errorf("ffjson: wanted token: %v, but got token: %v output=%s", wantedTok, tok, fs.Output.String()))
+tokerror:
+	if fs.BigError != nil {
+		return fs.WrapErr(fs.BigError)
+	}
+	err = fs.Error.ToError()
+	if err != nil {
+		return fs.WrapErr(err)
+	}
+	panic("ffjson-generated: unreachable, please report bug.")
+done:
+
+	return nil
+}
+
+// MarshalJSON marshal bytes to json - template
 func (j *Photo) MarshalJSON() ([]byte, error) {
 	var buf fflib.Buffer
 	if j == nil {
@@ -1119,765 +1878,6 @@ handle_Endpoints:
 
 				wantVal = false
 			}
-		}
-	}
-
-	state = fflib.FFParse_after_value
-	goto mainparse
-
-wantedvalue:
-	return fs.WrapErr(fmt.Errorf("wanted value token, but got token: %v", tok))
-wrongtokenerror:
-	return fs.WrapErr(fmt.Errorf("ffjson: wanted token: %v, but got token: %v output=%s", wantedTok, tok, fs.Output.String()))
-tokerror:
-	if fs.BigError != nil {
-		return fs.WrapErr(fs.BigError)
-	}
-	err = fs.Error.ToError()
-	if err != nil {
-		return fs.WrapErr(err)
-	}
-	panic("ffjson-generated: unreachable, please report bug.")
-done:
-
-	return nil
-}
-
-// MarshalJSON marshal bytes to json - template
-func (j *Response) MarshalJSON() ([]byte, error) {
-	var buf fflib.Buffer
-	if j == nil {
-		buf.WriteString("null")
-		return buf.Bytes(), nil
-	}
-	err := j.MarshalJSONBuf(&buf)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-// MarshalJSONBuf marshal buff to json - template
-func (j *Response) MarshalJSONBuf(buf fflib.EncodingBuffer) error {
-	if j == nil {
-		buf.WriteString("null")
-		return nil
-	}
-	var err error
-	var obj []byte
-	_ = obj
-	_ = err
-	buf.WriteString(`{ "type":`)
-	fflib.WriteJsonString(buf, string(j.Type))
-	buf.WriteString(`,"version":`)
-	fflib.WriteJsonString(buf, string(j.Version))
-	buf.WriteByte(',')
-	if len(j.Title) != 0 {
-		buf.WriteString(`"title":`)
-		fflib.WriteJsonString(buf, string(j.Title))
-		buf.WriteByte(',')
-	}
-	if len(j.AuthorName) != 0 {
-		buf.WriteString(`"author_name":`)
-		fflib.WriteJsonString(buf, string(j.AuthorName))
-		buf.WriteByte(',')
-	}
-	if len(j.AuthorURL) != 0 {
-		buf.WriteString(`"author_url":`)
-		fflib.WriteJsonString(buf, string(j.AuthorURL))
-		buf.WriteByte(',')
-	}
-	if len(j.ProviderName) != 0 {
-		buf.WriteString(`"provider_name":`)
-		fflib.WriteJsonString(buf, string(j.ProviderName))
-		buf.WriteByte(',')
-	}
-	if len(j.ProviderURL) != 0 {
-		buf.WriteString(`"provider_url":`)
-		fflib.WriteJsonString(buf, string(j.ProviderURL))
-		buf.WriteByte(',')
-	}
-	if j.CacheAge != 0 {
-		buf.WriteString(`"cache_age":`)
-		fflib.FormatBits2(buf, uint64(j.CacheAge), 10, j.CacheAge < 0)
-		buf.WriteByte(',')
-	}
-	if len(j.ThumbnailURL) != 0 {
-		buf.WriteString(`"thumbnail_url":`)
-		fflib.WriteJsonString(buf, string(j.ThumbnailURL))
-		buf.WriteByte(',')
-	}
-	if j.ThumbnailWidth != 0 {
-		buf.WriteString(`"thumbnail_width":`)
-		fflib.FormatBits2(buf, uint64(j.ThumbnailWidth), 10, j.ThumbnailWidth < 0)
-		buf.WriteByte(',')
-	}
-	if j.ThumbnailHeight != 0 {
-		buf.WriteString(`"thumbnail_height":`)
-		fflib.FormatBits2(buf, uint64(j.ThumbnailHeight), 10, j.ThumbnailHeight < 0)
-		buf.WriteByte(',')
-	}
-	if len(j.URL) != 0 {
-		buf.WriteString(`"url":`)
-		fflib.WriteJsonString(buf, string(j.URL))
-		buf.WriteByte(',')
-	}
-	buf.Rewind(1)
-	buf.WriteByte('}')
-	return nil
-}
-
-const (
-	ffjtResponsebase = iota
-	ffjtResponsenosuchkey
-
-	ffjtResponseType
-
-	ffjtResponseVersion
-
-	ffjtResponseTitle
-
-	ffjtResponseAuthorName
-
-	ffjtResponseAuthorURL
-
-	ffjtResponseProviderName
-
-	ffjtResponseProviderURL
-
-	ffjtResponseCacheAge
-
-	ffjtResponseThumbnailURL
-
-	ffjtResponseThumbnailWidth
-
-	ffjtResponseThumbnailHeight
-
-	ffjtResponseURL
-)
-
-var ffjKeyResponseType = []byte("type")
-
-var ffjKeyResponseVersion = []byte("version")
-
-var ffjKeyResponseTitle = []byte("title")
-
-var ffjKeyResponseAuthorName = []byte("author_name")
-
-var ffjKeyResponseAuthorURL = []byte("author_url")
-
-var ffjKeyResponseProviderName = []byte("provider_name")
-
-var ffjKeyResponseProviderURL = []byte("provider_url")
-
-var ffjKeyResponseCacheAge = []byte("cache_age")
-
-var ffjKeyResponseThumbnailURL = []byte("thumbnail_url")
-
-var ffjKeyResponseThumbnailWidth = []byte("thumbnail_width")
-
-var ffjKeyResponseThumbnailHeight = []byte("thumbnail_height")
-
-var ffjKeyResponseURL = []byte("url")
-
-// UnmarshalJSON umarshall json - template of ffjson
-func (j *Response) UnmarshalJSON(input []byte) error {
-	fs := fflib.NewFFLexer(input)
-	return j.UnmarshalJSONFFLexer(fs, fflib.FFParse_map_start)
-}
-
-// UnmarshalJSONFFLexer fast json unmarshall - template ffjson
-func (j *Response) UnmarshalJSONFFLexer(fs *fflib.FFLexer, state fflib.FFParseState) error {
-	var err error
-	currentKey := ffjtResponsebase
-	_ = currentKey
-	tok := fflib.FFTok_init
-	wantedTok := fflib.FFTok_init
-
-mainparse:
-	for {
-		tok = fs.Scan()
-		//	println(fmt.Sprintf("debug: tok: %v  state: %v", tok, state))
-		if tok == fflib.FFTok_error {
-			goto tokerror
-		}
-
-		switch state {
-
-		case fflib.FFParse_map_start:
-			if tok != fflib.FFTok_left_bracket {
-				wantedTok = fflib.FFTok_left_bracket
-				goto wrongtokenerror
-			}
-			state = fflib.FFParse_want_key
-			continue
-
-		case fflib.FFParse_after_value:
-			if tok == fflib.FFTok_comma {
-				state = fflib.FFParse_want_key
-			} else if tok == fflib.FFTok_right_bracket {
-				goto done
-			} else {
-				wantedTok = fflib.FFTok_comma
-				goto wrongtokenerror
-			}
-
-		case fflib.FFParse_want_key:
-			// json {} ended. goto exit. woo.
-			if tok == fflib.FFTok_right_bracket {
-				goto done
-			}
-			if tok != fflib.FFTok_string {
-				wantedTok = fflib.FFTok_string
-				goto wrongtokenerror
-			}
-
-			kn := fs.Output.Bytes()
-			if len(kn) <= 0 {
-				// "" case. hrm.
-				currentKey = ffjtResponsenosuchkey
-				state = fflib.FFParse_want_colon
-				goto mainparse
-			} else {
-				switch kn[0] {
-
-				case 'a':
-
-					if bytes.Equal(ffjKeyResponseAuthorName, kn) {
-						currentKey = ffjtResponseAuthorName
-						state = fflib.FFParse_want_colon
-						goto mainparse
-
-					} else if bytes.Equal(ffjKeyResponseAuthorURL, kn) {
-						currentKey = ffjtResponseAuthorURL
-						state = fflib.FFParse_want_colon
-						goto mainparse
-					}
-
-				case 'c':
-
-					if bytes.Equal(ffjKeyResponseCacheAge, kn) {
-						currentKey = ffjtResponseCacheAge
-						state = fflib.FFParse_want_colon
-						goto mainparse
-					}
-
-				case 'p':
-
-					if bytes.Equal(ffjKeyResponseProviderName, kn) {
-						currentKey = ffjtResponseProviderName
-						state = fflib.FFParse_want_colon
-						goto mainparse
-
-					} else if bytes.Equal(ffjKeyResponseProviderURL, kn) {
-						currentKey = ffjtResponseProviderURL
-						state = fflib.FFParse_want_colon
-						goto mainparse
-					}
-
-				case 't':
-
-					if bytes.Equal(ffjKeyResponseType, kn) {
-						currentKey = ffjtResponseType
-						state = fflib.FFParse_want_colon
-						goto mainparse
-
-					} else if bytes.Equal(ffjKeyResponseTitle, kn) {
-						currentKey = ffjtResponseTitle
-						state = fflib.FFParse_want_colon
-						goto mainparse
-
-					} else if bytes.Equal(ffjKeyResponseThumbnailURL, kn) {
-						currentKey = ffjtResponseThumbnailURL
-						state = fflib.FFParse_want_colon
-						goto mainparse
-
-					} else if bytes.Equal(ffjKeyResponseThumbnailWidth, kn) {
-						currentKey = ffjtResponseThumbnailWidth
-						state = fflib.FFParse_want_colon
-						goto mainparse
-
-					} else if bytes.Equal(ffjKeyResponseThumbnailHeight, kn) {
-						currentKey = ffjtResponseThumbnailHeight
-						state = fflib.FFParse_want_colon
-						goto mainparse
-					}
-
-				case 'u':
-
-					if bytes.Equal(ffjKeyResponseURL, kn) {
-						currentKey = ffjtResponseURL
-						state = fflib.FFParse_want_colon
-						goto mainparse
-					}
-
-				case 'v':
-
-					if bytes.Equal(ffjKeyResponseVersion, kn) {
-						currentKey = ffjtResponseVersion
-						state = fflib.FFParse_want_colon
-						goto mainparse
-					}
-
-				}
-
-				if fflib.SimpleLetterEqualFold(ffjKeyResponseURL, kn) {
-					currentKey = ffjtResponseURL
-					state = fflib.FFParse_want_colon
-					goto mainparse
-				}
-
-				if fflib.AsciiEqualFold(ffjKeyResponseThumbnailHeight, kn) {
-					currentKey = ffjtResponseThumbnailHeight
-					state = fflib.FFParse_want_colon
-					goto mainparse
-				}
-
-				if fflib.AsciiEqualFold(ffjKeyResponseThumbnailWidth, kn) {
-					currentKey = ffjtResponseThumbnailWidth
-					state = fflib.FFParse_want_colon
-					goto mainparse
-				}
-
-				if fflib.AsciiEqualFold(ffjKeyResponseThumbnailURL, kn) {
-					currentKey = ffjtResponseThumbnailURL
-					state = fflib.FFParse_want_colon
-					goto mainparse
-				}
-
-				if fflib.AsciiEqualFold(ffjKeyResponseCacheAge, kn) {
-					currentKey = ffjtResponseCacheAge
-					state = fflib.FFParse_want_colon
-					goto mainparse
-				}
-
-				if fflib.AsciiEqualFold(ffjKeyResponseProviderURL, kn) {
-					currentKey = ffjtResponseProviderURL
-					state = fflib.FFParse_want_colon
-					goto mainparse
-				}
-
-				if fflib.AsciiEqualFold(ffjKeyResponseProviderName, kn) {
-					currentKey = ffjtResponseProviderName
-					state = fflib.FFParse_want_colon
-					goto mainparse
-				}
-
-				if fflib.AsciiEqualFold(ffjKeyResponseAuthorURL, kn) {
-					currentKey = ffjtResponseAuthorURL
-					state = fflib.FFParse_want_colon
-					goto mainparse
-				}
-
-				if fflib.AsciiEqualFold(ffjKeyResponseAuthorName, kn) {
-					currentKey = ffjtResponseAuthorName
-					state = fflib.FFParse_want_colon
-					goto mainparse
-				}
-
-				if fflib.SimpleLetterEqualFold(ffjKeyResponseTitle, kn) {
-					currentKey = ffjtResponseTitle
-					state = fflib.FFParse_want_colon
-					goto mainparse
-				}
-
-				if fflib.EqualFoldRight(ffjKeyResponseVersion, kn) {
-					currentKey = ffjtResponseVersion
-					state = fflib.FFParse_want_colon
-					goto mainparse
-				}
-
-				if fflib.SimpleLetterEqualFold(ffjKeyResponseType, kn) {
-					currentKey = ffjtResponseType
-					state = fflib.FFParse_want_colon
-					goto mainparse
-				}
-
-				currentKey = ffjtResponsenosuchkey
-				state = fflib.FFParse_want_colon
-				goto mainparse
-			}
-
-		case fflib.FFParse_want_colon:
-			if tok != fflib.FFTok_colon {
-				wantedTok = fflib.FFTok_colon
-				goto wrongtokenerror
-			}
-			state = fflib.FFParse_want_value
-			continue
-		case fflib.FFParse_want_value:
-
-			if tok == fflib.FFTok_left_brace || tok == fflib.FFTok_left_bracket || tok == fflib.FFTok_integer || tok == fflib.FFTok_double || tok == fflib.FFTok_string || tok == fflib.FFTok_bool || tok == fflib.FFTok_null {
-				switch currentKey {
-
-				case ffjtResponseType:
-					goto handle_Type
-
-				case ffjtResponseVersion:
-					goto handle_Version
-
-				case ffjtResponseTitle:
-					goto handle_Title
-
-				case ffjtResponseAuthorName:
-					goto handle_AuthorName
-
-				case ffjtResponseAuthorURL:
-					goto handle_AuthorURL
-
-				case ffjtResponseProviderName:
-					goto handle_ProviderName
-
-				case ffjtResponseProviderURL:
-					goto handle_ProviderURL
-
-				case ffjtResponseCacheAge:
-					goto handle_CacheAge
-
-				case ffjtResponseThumbnailURL:
-					goto handle_ThumbnailURL
-
-				case ffjtResponseThumbnailWidth:
-					goto handle_ThumbnailWidth
-
-				case ffjtResponseThumbnailHeight:
-					goto handle_ThumbnailHeight
-
-				case ffjtResponseURL:
-					goto handle_URL
-
-				case ffjtResponsenosuchkey:
-					err = fs.SkipField(tok)
-					if err != nil {
-						return fs.WrapErr(err)
-					}
-					state = fflib.FFParse_after_value
-					goto mainparse
-				}
-			} else {
-				goto wantedvalue
-			}
-		}
-	}
-
-handle_Type:
-
-	/* handler: j.Type type=string kind=string quoted=false*/
-
-	{
-
-		{
-			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
-				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
-			}
-		}
-
-		if tok == fflib.FFTok_null {
-
-		} else {
-
-			outBuf := fs.Output.Bytes()
-
-			j.Type = string(string(outBuf))
-
-		}
-	}
-
-	state = fflib.FFParse_after_value
-	goto mainparse
-
-handle_Version:
-
-	/* handler: j.Version type=string kind=string quoted=false*/
-
-	{
-
-		{
-			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
-				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
-			}
-		}
-
-		if tok == fflib.FFTok_null {
-
-		} else {
-
-			outBuf := fs.Output.Bytes()
-
-			j.Version = string(string(outBuf))
-
-		}
-	}
-
-	state = fflib.FFParse_after_value
-	goto mainparse
-
-handle_Title:
-
-	/* handler: j.Title type=string kind=string quoted=false*/
-
-	{
-
-		{
-			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
-				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
-			}
-		}
-
-		if tok == fflib.FFTok_null {
-
-		} else {
-
-			outBuf := fs.Output.Bytes()
-
-			j.Title = string(string(outBuf))
-
-		}
-	}
-
-	state = fflib.FFParse_after_value
-	goto mainparse
-
-handle_AuthorName:
-
-	/* handler: j.AuthorName type=string kind=string quoted=false*/
-
-	{
-
-		{
-			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
-				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
-			}
-		}
-
-		if tok == fflib.FFTok_null {
-
-		} else {
-
-			outBuf := fs.Output.Bytes()
-
-			j.AuthorName = string(string(outBuf))
-
-		}
-	}
-
-	state = fflib.FFParse_after_value
-	goto mainparse
-
-handle_AuthorURL:
-
-	/* handler: j.AuthorURL type=string kind=string quoted=false*/
-
-	{
-
-		{
-			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
-				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
-			}
-		}
-
-		if tok == fflib.FFTok_null {
-
-		} else {
-
-			outBuf := fs.Output.Bytes()
-
-			j.AuthorURL = string(string(outBuf))
-
-		}
-	}
-
-	state = fflib.FFParse_after_value
-	goto mainparse
-
-handle_ProviderName:
-
-	/* handler: j.ProviderName type=string kind=string quoted=false*/
-
-	{
-
-		{
-			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
-				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
-			}
-		}
-
-		if tok == fflib.FFTok_null {
-
-		} else {
-
-			outBuf := fs.Output.Bytes()
-
-			j.ProviderName = string(string(outBuf))
-
-		}
-	}
-
-	state = fflib.FFParse_after_value
-	goto mainparse
-
-handle_ProviderURL:
-
-	/* handler: j.ProviderURL type=string kind=string quoted=false*/
-
-	{
-
-		{
-			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
-				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
-			}
-		}
-
-		if tok == fflib.FFTok_null {
-
-		} else {
-
-			outBuf := fs.Output.Bytes()
-
-			j.ProviderURL = string(string(outBuf))
-
-		}
-	}
-
-	state = fflib.FFParse_after_value
-	goto mainparse
-
-handle_CacheAge:
-
-	/* handler: j.CacheAge type=int kind=int quoted=false*/
-
-	{
-		if tok != fflib.FFTok_integer && tok != fflib.FFTok_null {
-			return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for int", tok))
-		}
-	}
-
-	{
-
-		if tok == fflib.FFTok_null {
-
-		} else {
-
-			tval, err := fflib.ParseInt(fs.Output.Bytes(), 10, 64)
-
-			if err != nil {
-				return fs.WrapErr(err)
-			}
-
-			j.CacheAge = int(tval)
-
-		}
-	}
-
-	state = fflib.FFParse_after_value
-	goto mainparse
-
-handle_ThumbnailURL:
-
-	/* handler: j.ThumbnailURL type=string kind=string quoted=false*/
-
-	{
-
-		{
-			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
-				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
-			}
-		}
-
-		if tok == fflib.FFTok_null {
-
-		} else {
-
-			outBuf := fs.Output.Bytes()
-
-			j.ThumbnailURL = string(string(outBuf))
-
-		}
-	}
-
-	state = fflib.FFParse_after_value
-	goto mainparse
-
-handle_ThumbnailWidth:
-
-	/* handler: j.ThumbnailWidth type=int kind=int quoted=false*/
-
-	{
-		if tok != fflib.FFTok_integer && tok != fflib.FFTok_null {
-			return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for int", tok))
-		}
-	}
-
-	{
-
-		if tok == fflib.FFTok_null {
-
-		} else {
-
-			tval, err := fflib.ParseInt(fs.Output.Bytes(), 10, 64)
-
-			if err != nil {
-				return fs.WrapErr(err)
-			}
-
-			j.ThumbnailWidth = int(tval)
-
-		}
-	}
-
-	state = fflib.FFParse_after_value
-	goto mainparse
-
-handle_ThumbnailHeight:
-
-	/* handler: j.ThumbnailHeight type=int kind=int quoted=false*/
-
-	{
-		if tok != fflib.FFTok_integer && tok != fflib.FFTok_null {
-			return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for int", tok))
-		}
-	}
-
-	{
-
-		if tok == fflib.FFTok_null {
-
-		} else {
-
-			tval, err := fflib.ParseInt(fs.Output.Bytes(), 10, 64)
-
-			if err != nil {
-				return fs.WrapErr(err)
-			}
-
-			j.ThumbnailHeight = int(tval)
-
-		}
-	}
-
-	state = fflib.FFParse_after_value
-	goto mainparse
-
-handle_URL:
-
-	/* handler: j.URL type=string kind=string quoted=false*/
-
-	{
-
-		{
-			if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
-				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
-			}
-		}
-
-		if tok == fflib.FFTok_null {
-
-		} else {
-
-			outBuf := fs.Output.Bytes()
-
-			j.URL = string(string(outBuf))
-
 		}
 	}
 

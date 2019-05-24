@@ -17,6 +17,7 @@ func TestGetHostname(t *testing.T) {
 		"http://":                  "",
 		"":                         "",
 	} {
+		k, v := k, v
 		t.Run(k, func(t *testing.T) { assert.Equal(v, getHostname(k)) })
 	}
 }
@@ -26,7 +27,7 @@ func TestMakeCandidate(t *testing.T) {
 		Name: "YouTube",
 		URL:  "https://www.youtube.com/",
 		Endpoints: []Endpoint{
-			Endpoint{
+			{
 				Schemes: []string{
 					"https://*.youtube.com/watch*",
 					"https://*.youtube.com/v/*\"",

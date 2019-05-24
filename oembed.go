@@ -1,24 +1,35 @@
 package oembed
 
-import (
-	"golang.org/x/xerrors"
-)
+import "golang.org/x/xerrors"
 
-var (
-	ErrInvalidInputURL = xerrors.New("invalid input url")
-	ErrNoProviderFound = xerrors.New("no provider found with given url")
-)
-
-func Extract(url string, params *Params) (*Response, error) {
+// Extract try fetch oEmbed object for input url with params (if represent).
+// Return OEmbed if success.
+func Extract(url string, params *Params) (*OEmbed, error) {
 	if !isValidURL(url) {
-		return nil, ErrInvalidInputURL
+		return nil, Error{
+			Message: "invalid input url",
+			URL:     url,
+		}
 	}
-	if c := findProvider(url); c != nil {
-		return fetchEmbed(url, *c, params)
+	if provider := findProvider(url); provider != nil {
+		resp, err := fetchEmbed(url, provider, params)
+		if err != nil {
+			return nil, Error{
+				Message: err.Error(),
+				URL:     url,
+				Details: xerrors.Caller(1),
+			}
+		}
+		return resp, nil
 	}
-	return nil, ErrNoProviderFound
+
+	return nil, Error{
+		Message: "no provider found with given url",
+		URL:     url,
+	}
 }
 
+// HasProvider checks what input url has oEmbed provider
 func HasProvider(url string) bool {
 	return findProvider(url) != nil
 }

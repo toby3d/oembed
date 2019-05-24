@@ -2,12 +2,14 @@
 package oembed
 
 type (
+	// Provider represent a single provider info
 	Provider struct {
 		Name      string     `json:"provider_name"`
 		URL       string     `json:"provider_url"`
 		Endpoints []Endpoint `json:"endpoints"`
 	}
 
+	// Provider represent a single endpoint of Provider
 	Endpoint struct {
 		Schemes   []string `json:"schemes,omitempty"`
 		URL       string   `json:"url"`
@@ -17,7 +19,7 @@ type (
 
 	// Response can specify a resource type, such as photo or video.
 	// Each type has specific parameters associated with it.
-	Response struct {
+	OEmbed struct {
 		// The resource type.
 		Type string `json:"type"` // required
 
@@ -88,7 +90,7 @@ type (
 	// Link type allow a provider to return any generic embed data (such as title and author_name), without
 	// providing either the url or html parameters. The consumer may then link to the resource, using the URL
 	// specified in the original request.
-	Link string
+	// Link string
 
 	// Rich is used for rich HTML content that does not fall under one of the other categories.
 	Rich struct {
