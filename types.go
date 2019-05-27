@@ -9,7 +9,7 @@ type (
 		Endpoints []Endpoint `json:"endpoints"`
 	}
 
-	// Provider represent a single endpoint of Provider
+	// Endpoint represent a single endpoint of Provider
 	Endpoint struct {
 		Schemes   []string `json:"schemes,omitempty"`
 		URL       string   `json:"url"`
@@ -17,7 +17,7 @@ type (
 		Formats   []string `json:"formats,omitempty"`
 	}
 
-	// Response can specify a resource type, such as photo or video.
+	// OEmbed can specify a resource type, such as photo or video.
 	// Each type has specific parameters associated with it.
 	OEmbed struct {
 		// The resource type.
