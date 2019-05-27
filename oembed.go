@@ -1,3 +1,4 @@
+// Package oembed add utils for supporting oEmbed fetching data,
 package oembed
 
 import "golang.org/x/xerrors"

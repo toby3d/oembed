@@ -46,7 +46,7 @@ func TestFetchEmbed(t *testing.T) {
 			t.Run(url, func(t *testing.T) {
 				provider := findProvider(url)
 				if provider == nil {
-					provider = &Provider{Endpoints: []Endpoint{Endpoint{}}}
+					provider = &Provider{Endpoints: []Endpoint{{}}}
 				}
 
 				_, err := fetchEmbed(url, provider, nil)
